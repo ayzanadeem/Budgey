@@ -9,14 +9,32 @@ import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Repository interface for expense management operations
+ * Follows clean architecture principles with proper error handling
+ */
 interface ExpenseRepository {
+    /**
+     * Adds a new expense to the database
+     * @param expense The expense to add
+     * @return Result containing the created expense ID on success, exception on failure
+     */
     suspend fun addExpense(expense: Expense): Result<String>
-    suspend fun updateExpense(expenseId: String, expense: Expense): Result<Unit>
-    suspend fun deleteExpense(expenseId: String): Result<Unit>
-    fun getExpenses(userId: String): Flow<List<Pair<String, Expense>>>
+
+    /**
+     * Retrieves all expenses for a specific user
+     * @param userId The ID of the user whose expenses to retrieve
+     * @return Flow emitting Result with list of expenses and their IDs
+     */
+    fun getExpenses(userId: String): Flow<Result<List<Pair<String, Expense>>>>
+
+    /**
+     * Retrieves expenses for a specific user within a given month
+     * @param userId The ID of the user whose expenses to retrieve
+     * @param monthKey The month key in format "yyyy-MM" (e.g., "2025-09")
+     * @return Result containing list of expenses and their IDs for the specified month
+     */
     suspend fun getExpensesByMonth(userId: String, monthKey: String): Result<List<Pair<String, Expense>>>
-    suspend fun getExpensesByDateRange(userId: String, startDate: Long, endDate: Long): Result<List<Pair<String, Expense>>>
-    suspend fun getTotalAmountByType(userId: String, monthKey: String, type: ExpenseType): Result<Double>
 }
 
 @Singleton
@@ -35,25 +53,7 @@ class ExpenseRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun updateExpense(expenseId: String, expense: Expense): Result<Unit> {
-        return try {
-            expensesCollection.document(expenseId).set(expense.toMap()).await()
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    override suspend fun deleteExpense(expenseId: String): Result<Unit> {
-        return try {
-            expensesCollection.document(expenseId).delete().await()
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    override fun getExpenses(userId: String): Flow<List<Pair<String, Expense>>> = flow {
+    override fun getExpenses(userId: String): Flow<Result<List<Pair<String, Expense>>>> = flow {
         try {
             val snapshot = expensesCollection
                 .whereEqualTo(FirestoreFields.USER_ID, userId)
@@ -66,9 +66,9 @@ class ExpenseRepositoryImpl @Inject constructor(
                     doc.id to expense
                 }
             }
-            emit(expenses)
+            emit(Result.success(expenses))
         } catch (e: Exception) {
-            emit(emptyList())
+            emit(Result.failure(e))
         }
     }
 
@@ -87,49 +87,6 @@ class ExpenseRepositoryImpl @Inject constructor(
                 }
             }
             Result.success(expenses)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    override suspend fun getExpensesByDateRange(
-        userId: String,
-        startDate: Long,
-        endDate: Long
-    ): Result<List<Pair<String, Expense>>> {
-        return try {
-            val snapshot = expensesCollection
-                .whereEqualTo(FirestoreFields.USER_ID, userId)
-                .whereGreaterThanOrEqualTo(FirestoreFields.CREATED_AT, com.google.firebase.Timestamp(java.util.Date(startDate)))
-                .whereLessThanOrEqualTo(FirestoreFields.CREATED_AT, com.google.firebase.Timestamp(java.util.Date(endDate)))
-                .orderBy(FirestoreFields.CREATED_AT, Query.Direction.DESCENDING)
-                .get()
-                .await()
-
-            val expenses = snapshot.documents.mapNotNull { doc ->
-                doc.toExpense()?.let { expense ->
-                    doc.id to expense
-                }
-            }
-            Result.success(expenses)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    override suspend fun getTotalAmountByType(userId: String, monthKey: String, type: ExpenseType): Result<Double> {
-        return try {
-            val snapshot = expensesCollection
-                .whereEqualTo(FirestoreFields.USER_ID, userId)
-                .whereEqualTo(FirestoreFields.BUDGET_MONTH_KEY, monthKey)
-                .whereEqualTo(FirestoreFields.TYPE, type.name)
-                .get()
-                .await()
-
-            val total = snapshot.documents.sumOf { doc ->
-                doc.getDouble(FirestoreFields.AMOUNT) ?: 0.0
-            }
-            Result.success(total)
         } catch (e: Exception) {
             Result.failure(e)
         }
