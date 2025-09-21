@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "123456789",
-    "project_id": "budgey-placeholder",
-    "storage_bucket": "budgey-placeholder.appspot.com"
+    "project_number": "1039949282182",
+    "project_id": "budgey-18571",
+    "storage_bucket": "budgey-18571.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:123456789:android:placeholder",
+        "mobilesdk_app_id": "1:1039949282182:android:db8a755d05b5d0be6d8a07",
         "android_client_info": {
           "package_name": "com.example.budgey"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "placeholder-api-key"
+          "current_key": "AIzaSyCMsjwwToD-vVJRBNrnjczfNnSZjUBqTRI"
         }
       ],
       "services": {
@@ -27,4 +27,3 @@
   ],
   "configuration_version": "1"
 }
-
