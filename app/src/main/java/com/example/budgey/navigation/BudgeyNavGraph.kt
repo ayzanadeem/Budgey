@@ -13,6 +13,8 @@ import androidx.navigation.compose.composable
 import com.example.budgey.presentation.ui.screens.LoginScreen
 import com.example.budgey.presentation.ui.screens.NewExpenseScreen
 import com.example.budgey.presentation.ui.screens.ExpenseBreakdownScreen
+import com.example.budgey.presentation.ui.screens.AddCategoryScreen
+
 /**
  * Main navigation graph for the Budgey app
  * Handles navigation between all screens including auth and main app destinations
@@ -53,9 +55,7 @@ fun BudgeyNavGraph(
         }
 
         composable(route = BudgeyDestination.NewCategory.route) {
-//            AddCategoryScreen()
+            AddCategoryScreen()
         }
     }
 }
-
-
