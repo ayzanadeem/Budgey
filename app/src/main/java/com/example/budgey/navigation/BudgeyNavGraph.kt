@@ -12,7 +12,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.budgey.presentation.ui.screens.LoginScreen
 import com.example.budgey.presentation.ui.screens.NewExpenseScreen
-
+import com.example.budgey.presentation.ui.screens.ExpenseBreakdownScreen
 /**
  * Main navigation graph for the Budgey app
  * Handles navigation between all screens including auth and main app destinations
@@ -53,49 +53,9 @@ fun BudgeyNavGraph(
         }
 
         composable(route = BudgeyDestination.NewCategory.route) {
-            AddCategoryScreen()
+//            AddCategoryScreen()
         }
     }
 }
 
-// Placeholder screen composables - these will be replaced with actual implementations
-@Composable
-private fun ExpenseBreakdownScreen() {
-    // TODO: Implement ExpenseBreakdownScreen using ExpenseBreakdownViewModel
-    PlaceholderScreen(title = "My Expenses", description = "View your expense breakdown")
-}
 
-@Composable
-private fun AddCategoryScreen() {
-    // TODO: Implement AddCategoryScreen using AddCategoryViewModel
-    PlaceholderScreen(title = "New Category", description = "Create expense categories")
-}
-
-@Composable
-private fun PlaceholderScreen(
-    title: String,
-    description: String,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-}
