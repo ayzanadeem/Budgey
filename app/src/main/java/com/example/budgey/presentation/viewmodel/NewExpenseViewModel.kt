@@ -45,7 +45,7 @@ class NewExpenseViewModel @Inject constructor(
     /**
      * Loads categories from repository with loading state management
      */
-    private fun loadCategories() {
+    fun loadCategories() {
         val currentUserId = firebaseAuth.currentUser?.uid
         if (currentUserId == null) {
             _uiState.value = _uiState.value.copy(
@@ -130,9 +130,9 @@ class NewExpenseViewModel @Inject constructor(
     /**
      * Updates selected category
      */
-    fun selectCategory(category: Category) {
+    fun selectCategory(categoryName: String) {
         _uiState.value = _uiState.value.copy(
-            selectedCategoryName = category.name,
+            selectedCategoryName = categoryName,
             showCategoryPicker = false,
             uiMessage = null
         )

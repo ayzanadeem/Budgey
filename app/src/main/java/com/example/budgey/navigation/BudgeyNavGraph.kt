@@ -11,6 +11,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.budgey.presentation.ui.screens.LoginScreen
+import com.example.budgey.presentation.ui.screens.NewExpenseScreen
 
 /**
  * Main navigation graph for the Budgey app
@@ -59,12 +60,6 @@ fun BudgeyNavGraph(
 
 // Placeholder screen composables - these will be replaced with actual implementations
 @Composable
-private fun NewExpenseScreen() {
-    // TODO: Implement NewExpenseScreen using NewExpenseViewModel
-    PlaceholderScreen(title = "New Expense", description = "Add your expenses here")
-}
-
-@Composable
 private fun ExpenseBreakdownScreen() {
     // TODO: Implement ExpenseBreakdownScreen using ExpenseBreakdownViewModel
     PlaceholderScreen(title = "My Expenses", description = "View your expense breakdown")
@@ -82,24 +77,24 @@ private fun PlaceholderScreen(
     description: String,
     modifier: Modifier = Modifier
 ) {
-    androidx.compose.foundation.layout.Box(
+    Box(
         modifier = modifier.fillMaxSize(),
-        contentAlignment = androidx.compose.ui.Alignment.Center
+        contentAlignment = Alignment.Center
     ) {
-        androidx.compose.foundation.layout.Column(
-            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
-            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            androidx.compose.material3.Text(
+            Text(
                 text = title,
-                style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
-                color = androidx.compose.material3.MaterialTheme.colorScheme.onSurface
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onSurface
             )
-            androidx.compose.material3.Text(
+            Text(
                 text = description,
-                style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
-                color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
             )
         }
     }
