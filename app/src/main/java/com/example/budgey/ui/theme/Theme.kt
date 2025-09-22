@@ -3,45 +3,94 @@ package com.example.budgey.ui.theme
 import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
+
+// Custom color schemes using our extended color system
+private val LightColorScheme = lightColorScheme(
+    primary = BudgeyColors.Light.primary,
+    onPrimary = BudgeyColors.Light.onPrimary,
+    primaryContainer = BudgeyColors.Light.primaryContainer,
+    onPrimaryContainer = BudgeyColors.Light.onPrimaryContainer,
+
+    secondary = BudgeyColors.Light.secondary,
+    onSecondary = BudgeyColors.Light.onSecondary,
+    secondaryContainer = BudgeyColors.Light.secondaryContainer,
+    onSecondaryContainer = BudgeyColors.Light.onSecondaryContainer,
+
+    tertiary = BudgeyColors.Light.tertiary,
+    onTertiary = BudgeyColors.Light.onTertiary,
+    tertiaryContainer = BudgeyColors.Light.tertiaryContainer,
+    onTertiaryContainer = BudgeyColors.Light.onTertiaryContainer,
+
+    background = BudgeyColors.Light.background,
+    onBackground = BudgeyColors.Light.onBackground,
+    surface = BudgeyColors.Light.surface,
+    onSurface = BudgeyColors.Light.onSurface,
+    surfaceVariant = BudgeyColors.Light.surfaceVariant,
+    onSurfaceVariant = BudgeyColors.Light.onSurfaceVariant,
+
+    outline = BudgeyColors.Light.outline,
+    outlineVariant = BudgeyColors.Light.outlineVariant,
+    scrim = BudgeyColors.Light.scrim,
+
+    error = BudgeyColors.Light.error,
+    onError = BudgeyColors.Light.onError,
+    errorContainer = BudgeyColors.Light.errorContainer,
+    onErrorContainer = BudgeyColors.Light.onErrorContainer
+)
 
 private val DarkColorScheme = darkColorScheme(
-    primary = SoftLilac,
-    secondary = DarkVenice,
-    tertiary = DeepPurple,
-    background = DarkBackground,
-    surface = DarkSurface,
-    onPrimary = LightText,
-    onSecondary = LightText,
-    onTertiary = LightText,
-    onBackground = LightText,
-    onSurface = LightText,
+    primary = BudgeyColors.Dark.primary,
+    onPrimary = BudgeyColors.Dark.onPrimary,
+    primaryContainer = BudgeyColors.Dark.primaryContainer,
+    onPrimaryContainer = BudgeyColors.Dark.onPrimaryContainer,
+
+    secondary = BudgeyColors.Dark.secondary,
+    onSecondary = BudgeyColors.Dark.onSecondary,
+    secondaryContainer = BudgeyColors.Dark.secondaryContainer,
+    onSecondaryContainer = BudgeyColors.Dark.onSecondaryContainer,
+
+    tertiary = BudgeyColors.Dark.tertiary,
+    onTertiary = BudgeyColors.Dark.onTertiary,
+    tertiaryContainer = BudgeyColors.Dark.tertiaryContainer,
+    onTertiaryContainer = BudgeyColors.Dark.onTertiaryContainer,
+
+    background = BudgeyColors.Dark.background,
+    onBackground = BudgeyColors.Dark.onBackground,
+    surface = BudgeyColors.Dark.surface,
+    onSurface = BudgeyColors.Dark.onSurface,
+    surfaceVariant = BudgeyColors.Dark.surfaceVariant,
+    onSurfaceVariant = BudgeyColors.Dark.onSurfaceVariant,
+
+    outline = BudgeyColors.Dark.outline,
+    outlineVariant = BudgeyColors.Dark.outlineVariant,
+    scrim = BudgeyColors.Dark.scrim,
+
+    error = BudgeyColors.Dark.error,
+    onError = BudgeyColors.Dark.onError,
+    errorContainer = BudgeyColors.Dark.errorContainer,
+    onErrorContainer = BudgeyColors.Dark.onErrorContainer
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = VeniceBlue,
-    secondary = DeepLilac,
-    tertiary = MistLilac,
-    background = LightBackground,
-    surface = SoftGray,
-    onPrimary = LightText,
-    onSecondary = DarkGray,
-    onTertiary = DarkGray,
-    onBackground = DarkGray,
-    onSurface = DarkGray,
-)
+// CompositionLocal for extended colors
+val LocalBudgeyExtendedColors = staticCompositionLocalOf { lightExtendedColors }
+
+// Extension property to access extended colors
+val MaterialTheme.budgeyColors: BudgeyExtendedColors
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalBudgeyExtendedColors.current
 
 @Composable
 fun BudgeyTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false, // Disabled by default to use our custom colors
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -49,14 +98,27 @@ fun BudgeyTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    val extendedColors = if (darkTheme) darkExtendedColors else lightExtendedColors
+
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as Activity).window
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+        }
+    }
+
+    CompositionLocalProvider(
+        LocalBudgeyExtendedColors provides extendedColors
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = BudgeyTypography,
+            content = content
+        )
+    }
 }
