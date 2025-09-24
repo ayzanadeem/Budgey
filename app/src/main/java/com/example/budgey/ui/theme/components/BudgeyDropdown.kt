@@ -153,7 +153,8 @@ fun BudgeyDropdown(
                 },
                 modifier = Modifier
                     .exposedDropdownSize()
-                    .heightIn(max = 200.dp)
+                    .width(300.dp)
+                    .height(200.dp)
             ) {
                 // Search field for searchable dropdown
                 if (searchable) {
@@ -178,7 +179,7 @@ fun BudgeyDropdown(
                     // Empty state
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .width(284.dp)
                             .padding(BudgeySpacing.lg),
                         contentAlignment = Alignment.Center
                     ) {
@@ -189,45 +190,51 @@ fun BudgeyDropdown(
                         )
                     }
                 } else {
-                    LazyColumn {
-                        items(filteredOptions) { option ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text = option,
-                                        style = BudgeyTextStyles.dropdownItem,
-                                        color = if (option == selectedOption) {
-                                            MaterialTheme.colorScheme.primary
-                                        } else {
-                                            MaterialTheme.colorScheme.onSurface
-                                        }
-                                    )
-                                },
-                                onClick = {
-                                    onOptionSelected(option)
-                                    expanded = false
-                                    searchQuery = ""
-                                    keyboardController?.hide()
-                                },
-                                leadingIcon = if (option == selectedOption) {
-                                    {
-                                        Icon(
-                                            imageVector = Icons.Default.Check,
-                                            contentDescription = "Selected",
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(BudgeySize.iconSm)
+                    Box(
+                        modifier = Modifier
+                            .width(284.dp)
+                            .height(200.dp) // Fixed height here
+                    ) {
+                        LazyColumn {
+                            items(filteredOptions) { option ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = option,
+                                            style = BudgeyTextStyles.dropdownItem,
+                                            color = if (option == selectedOption) {
+                                                MaterialTheme.colorScheme.primary
+                                            } else {
+                                                MaterialTheme.colorScheme.onSurface
+                                            }
                                         )
-                                    }
-                                } else null,
-                                colors = MenuDefaults.itemColors(
-                                    textColor = MaterialTheme.colorScheme.onSurface,
-                                    leadingIconColor = MaterialTheme.colorScheme.primary
-                                ),
-                                contentPadding = PaddingValues(
-                                    horizontal = BudgeySpacing.md,
-                                    vertical = BudgeySpacing.sm
+                                    },
+                                    onClick = {
+                                        onOptionSelected(option)
+                                        expanded = false
+                                        searchQuery = ""
+                                        keyboardController?.hide()
+                                    },
+                                    leadingIcon = if (option == selectedOption) {
+                                        {
+                                            Icon(
+                                                imageVector = Icons.Default.Check,
+                                                contentDescription = "Selected",
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(BudgeySize.iconSm)
+                                            )
+                                        }
+                                    } else null,
+                                    colors = MenuDefaults.itemColors(
+                                        textColor = MaterialTheme.colorScheme.onSurface,
+                                        leadingIconColor = MaterialTheme.colorScheme.primary
+                                    ),
+                                    contentPadding = PaddingValues(
+                                        horizontal = BudgeySpacing.md,
+                                        vertical = BudgeySpacing.sm
+                                    )
                                 )
-                            )
+                            }
                         }
                     }
                 }
@@ -374,7 +381,8 @@ fun BudgeyMultiSelectDropdown(
                 },
                 modifier = Modifier
                     .exposedDropdownSize()
-                    .heightIn(max = 250.dp)
+                    .width(300.dp)
+                    .height(200.dp)
             ) {
                 // Search field
                 if (searchable) {
@@ -398,7 +406,7 @@ fun BudgeyMultiSelectDropdown(
                 if (filteredOptions.isEmpty()) {
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .width(284.dp)
                             .padding(BudgeySpacing.lg),
                         contentAlignment = Alignment.Center
                     ) {
@@ -409,51 +417,59 @@ fun BudgeyMultiSelectDropdown(
                         )
                     }
                 } else {
-                    LazyColumn {
-                        items(filteredOptions) { option ->
-                            val isSelected = selectedOptions.contains(option)
-                            val canSelect = maxSelections == null ||
-                                selectedOptions.size < maxSelections ||
-                                isSelected
+                    Box(
+                        modifier = Modifier
+                            .width(284.dp)
+                            .height(200.dp) // Fixed height here
+                    ) {
+                        LazyColumn {
+                            items(filteredOptions) { option ->
+                                val isSelected = selectedOptions.contains(option)
+                                val canSelect = maxSelections == null ||
+                                        selectedOptions.size < maxSelections ||
+                                        isSelected
 
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text = option,
-                                        style = BudgeyTextStyles.dropdownItem,
-                                        color = if (canSelect) {
-                                            MaterialTheme.colorScheme.onSurface
-                                        } else {
-                                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                                        }
-                                    )
-                                },
-                                onClick = {
-                                    if (canSelect) {
-                                        onOptionToggled(option)
-                                    }
-                                },
-                                leadingIcon = {
-                                    Checkbox(
-                                        checked = isSelected,
-                                        onCheckedChange = {
-                                            if (canSelect) {
-                                                onOptionToggled(option)
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = option,
+                                            style = BudgeyTextStyles.dropdownItem,
+                                            color = if (canSelect) {
+                                                MaterialTheme.colorScheme.onSurface
+                                            } else {
+                                                MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                                                    alpha = 0.6f
+                                                )
                                             }
-                                        },
-                                        enabled = canSelect,
-                                        colors = CheckboxDefaults.colors(
-                                            checkedColor = MaterialTheme.colorScheme.primary,
-                                            uncheckedColor = MaterialTheme.colorScheme.outline
                                         )
+                                    },
+                                    onClick = {
+                                        if (canSelect) {
+                                            onOptionToggled(option)
+                                        }
+                                    },
+                                    leadingIcon = {
+                                        Checkbox(
+                                            checked = isSelected,
+                                            onCheckedChange = {
+                                                if (canSelect) {
+                                                    onOptionToggled(option)
+                                                }
+                                            },
+                                            enabled = canSelect,
+                                            colors = CheckboxDefaults.colors(
+                                                checkedColor = MaterialTheme.colorScheme.primary,
+                                                uncheckedColor = MaterialTheme.colorScheme.outline
+                                            )
+                                        )
+                                    },
+                                    enabled = canSelect,
+                                    contentPadding = PaddingValues(
+                                        horizontal = BudgeySpacing.md,
+                                        vertical = BudgeySpacing.xs
                                     )
-                                },
-                                enabled = canSelect,
-                                contentPadding = PaddingValues(
-                                    horizontal = BudgeySpacing.md,
-                                    vertical = BudgeySpacing.xs
                                 )
-                            )
+                            }
                         }
                     }
                 }

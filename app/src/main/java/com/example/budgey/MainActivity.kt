@@ -28,3 +28,10 @@ fun BudgeyAppPreview() {
         BudgeyApp()
     }
 }
+
+//todo:
+// fix date picker on new expense screen
+// fix focus automatic capture when screen open
+// fix category permission issue
+// add pagination to expenses list
+// change budget month key logic + change how header shows month

@@ -151,7 +151,7 @@ private fun ExpenseBreakdownScreenContent(
 @Composable
 private fun ExpenseBreakdownHeader() {
     Column(
-        modifier = Modifier.padding(BudgeySpacing.lg),
+        modifier = Modifier.fillMaxWidth().padding(BudgeySpacing.lg),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(BudgeySpacing.sm)
     ) {
