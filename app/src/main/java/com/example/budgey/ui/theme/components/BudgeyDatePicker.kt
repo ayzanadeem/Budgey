@@ -40,20 +40,13 @@ fun BudgeyDatePicker(
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() }
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
-    val isFocused by interactionSource.collectIsFocusedAsState()
+
+    // Create separate interaction source for the clickable area
+    val clickableInteractionSource = remember { MutableInteractionSource() }
+    val isFocused by clickableInteractionSource.collectIsFocusedAsState()
 
     val dateFormatter = remember { DateTimeFormatter.ofPattern("MMM dd, yyyy") }
     val displayText = selectedDate?.format(dateFormatter) ?: ""
-
-    val borderColor by animateColorAsState(
-        targetValue = when {
-            isError -> MaterialTheme.colorScheme.error
-            isFocused -> MaterialTheme.colorScheme.primary
-            else -> MaterialTheme.colorScheme.outline
-        },
-        animationSpec = tween(BudgeyDuration.medium),
-        label = "border_color"
-    )
 
     val scale by animateFloatAsState(
         targetValue = if (isFocused) 1.02f else 1f,
@@ -76,69 +69,91 @@ fun BudgeyDatePicker(
             )
         }
 
-        // Date Input Field
-        OutlinedTextField(
-            value = displayText,
-            onValueChange = { },
+        // Date Input Field - Wrap in clickable Box
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .scale(scale)
                 .clickable(
                     enabled = enabled,
-                    interactionSource = interactionSource,
+                    interactionSource = clickableInteractionSource,
                     indication = null
                 ) {
                     if (enabled) {
                         showDatePicker = true
                     }
+                }
+        ) {
+            OutlinedTextField(
+                value = displayText,
+                onValueChange = { },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = {
+                    Text(
+                        text = placeholder,
+                        style = BudgeyTextStyles.inputPlaceholder,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
                 },
-            placeholder = {
-                Text(
-                    text = placeholder,
-                    style = BudgeyTextStyles.inputPlaceholder,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                )
-            },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.DateRange,
-                    contentDescription = "Select date",
-                    tint = when {
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.DateRange,
+                        contentDescription = "Select date",
+                        tint = when {
+                            isError -> MaterialTheme.colorScheme.error
+                            isFocused -> MaterialTheme.colorScheme.primary
+                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        modifier = Modifier.size(BudgeySize.iconMd)
+                    )
+                },
+                trailingIcon = if (selectedDate != null && enabled) {
+                    {
+                        IconButton(
+                            onClick = {
+                                // Clear the date by setting it to null or current date
+                                // You might want to pass null instead of LocalDate.now()
+                                onDateSelected(LocalDate.now())
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Clear,
+                                contentDescription = "Clear date",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(BudgeySize.iconSm)
+                            )
+                        }
+                    }
+                } else null,
+                isError = isError,
+                enabled = false, // Disable the TextField to prevent focus
+                readOnly = true,
+                textStyle = BudgeyTextStyles.inputText,
+                singleLine = true,
+                shape = RoundedCornerShape(BudgeyRadius.inputField),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = if (isFocused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    disabledBorderColor = when {
+                        isError -> MaterialTheme.colorScheme.error
+                        isFocused -> MaterialTheme.colorScheme.primary
+                        else -> MaterialTheme.colorScheme.outline
+                    },
+                    errorBorderColor = MaterialTheme.colorScheme.error,
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    disabledTextColor = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    errorTextColor = MaterialTheme.colorScheme.onSurface,
+                    disabledLeadingIconColor = when {
+                        !enabled -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                         isError -> MaterialTheme.colorScheme.error
                         isFocused -> MaterialTheme.colorScheme.primary
                         else -> MaterialTheme.colorScheme.onSurfaceVariant
                     },
-                    modifier = Modifier.size(BudgeySize.iconMd)
+                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            },
-            trailingIcon = if (selectedDate != null && enabled) {
-                {
-                    BudgeyIconButton(
-                        onClick = { onDateSelected(LocalDate.now()) },
-                        icon = Icons.Default.Clear,
-                        contentDescription = "Clear date",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            } else null,
-            isError = isError,
-            enabled = enabled,
-            readOnly = true,
-            textStyle = BudgeyTextStyles.inputText,
-            singleLine = true,
-            interactionSource = interactionSource,
-            shape = RoundedCornerShape(BudgeyRadius.inputField),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                disabledBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                errorBorderColor = MaterialTheme.colorScheme.error,
-                focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                errorTextColor = MaterialTheme.colorScheme.onSurface
             )
-        )
+        }
 
         // Error message
         if (isError && errorMessage != null) {
