@@ -17,13 +17,19 @@ import com.example.budgey.ui.theme.BudgeyTheme
 @Composable
 fun BudgeyApp(
     modifier: Modifier = Modifier,
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController = rememberNavController(),
+    startDestination: String = BudgeyDestination.Login.route
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // Determine if we should show the bottom navigation
-    val shouldShowBottomBar = BudgeyDestination.isMainTabDestination(currentRoute)
+    // Determine if we should show the bottom navigation using direct string comparison
+    val shouldShowBottomBar = currentRoute in listOf(
+        "new_entry",
+        "my_expenses",
+        "new_category",
+        "more"
+    )
 
     BudgeyTheme {
         Scaffold(
@@ -37,6 +43,7 @@ fun BudgeyApp(
         ) { paddingValues ->
             BudgeyNavGraph(
                 navController = navController,
+                startDestination = startDestination,
                 modifier = Modifier.padding(paddingValues)
             )
         }

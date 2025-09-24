@@ -1,12 +1,7 @@
 package com.example.budgey.navigation
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -14,6 +9,7 @@ import com.example.budgey.presentation.ui.screens.LoginScreen
 import com.example.budgey.presentation.ui.screens.NewExpenseScreen
 import com.example.budgey.presentation.ui.screens.ExpenseBreakdownScreen
 import com.example.budgey.presentation.ui.screens.AddCategoryScreen
+import com.example.budgey.presentation.ui.screens.MoreScreen
 
 /**
  * Main navigation graph for the Budgey app
@@ -56,6 +52,20 @@ fun BudgeyNavGraph(
 
         composable(route = BudgeyDestination.NewCategory.route) {
             AddCategoryScreen()
+        }
+
+        composable(route = BudgeyDestination.More.route) {
+            MoreScreen(
+                onNavigateToLogin = {
+                    navController.navigate(BudgeyDestination.Login.route) {
+                        // Clear entire back stack when logging out
+                        popUpTo(0) {
+                            inclusive = true
+                        }
+                        launchSingleTop = true
+                    }
+                }
+            )
         }
     }
 }

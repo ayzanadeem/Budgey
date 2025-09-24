@@ -43,6 +43,13 @@ sealed class BudgeyDestination(
         selectedIcon = Icons.Filled.Add
     )
 
+    object More : BudgeyDestination(
+        route = "more",
+        title = "More",
+        icon = Icons.AutoMirrored.Default.List,
+        selectedIcon = Icons.AutoMirrored.Filled.List
+    )
+
     companion object {
         /**
          * Get all main tab destinations for bottom navigation
@@ -50,14 +57,32 @@ sealed class BudgeyDestination(
         val mainTabDestinations = listOf(
             NewEntry,
             MyExpenses,
-            NewCategory
+            NewCategory,
+            More
         )
 
         /**
-         * Check if route is a main tab destination
+         * Check if route is a main tab destination with comprehensive null safety
          */
         fun isMainTabDestination(route: String?): Boolean {
-            return mainTabDestinations.any { it.route == route }
+            return try {
+                if (route.isNullOrBlank()) return false
+
+                // Ensure mainTabDestinations is not null and not empty
+                if (mainTabDestinations.isEmpty()) return false
+
+                // Safe iteration with explicit null checks
+                mainTabDestinations.forEach { destination ->
+                    if (destination != null && destination.route == route) {
+                        return true
+                    }
+                }
+                false
+            } catch (e: Exception) {
+                // Log the error for debugging but don't crash the app
+                println("Error in isMainTabDestination: ${e.message}")
+                false
+            }
         }
     }
 }

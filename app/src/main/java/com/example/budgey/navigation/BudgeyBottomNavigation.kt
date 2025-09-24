@@ -25,14 +25,22 @@ fun BudgeyBottomNavigation(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
+    // Define destinations directly to avoid null issues
+    val destinations = listOf(
+        BudgeyDestination.NewEntry,
+        BudgeyDestination.MyExpenses,
+        BudgeyDestination.NewCategory,
+        BudgeyDestination.More
+    )
+
     NavigationBar(
         modifier = modifier.fillMaxWidth(),
         containerColor = MaterialTheme.colorScheme.surface,
         contentColor = MaterialTheme.colorScheme.onSurface,
         tonalElevation = 8.dp
     ) {
-        BudgeyDestination.mainTabDestinations.forEach { destination ->
-            val isSelected = currentRoute == destination.route
+        destinations.forEach { destination ->
+            val isSelected = currentRoute != null && currentRoute == destination.route
 
             BudgeyBottomNavigationItem(
                 destination = destination,
@@ -40,13 +48,10 @@ fun BudgeyBottomNavigation(
                 onClick = {
                     if (currentRoute != destination.route) {
                         navController.navigate(destination.route) {
-                            // Pop up to the start destination to avoid building up a large stack
                             popUpTo(navController.graph.startDestinationId) {
                                 saveState = true
                             }
-                            // Avoid multiple copies of the same destination when reselecting
                             launchSingleTop = true
-                            // Restore state when reselecting a previously selected item
                             restoreState = true
                         }
                     }
