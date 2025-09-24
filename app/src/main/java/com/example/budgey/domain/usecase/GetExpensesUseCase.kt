@@ -67,38 +67,6 @@ class GetExpensesUseCase @Inject constructor(
     }
 
     /**
-     * Fetches expenses for a specific month
-     * @param userId The ID of the user whose expenses to fetch
-     * @param monthKey The month key in format "yyyy-MM"
-     * @return Result with monthly expenses data
-     */
-    suspend fun getExpensesForMonth(userId: String, monthKey: String): Result<MonthlyExpenses> {
-        // Input validation
-        if (userId.isBlank()) {
-            return Result.failure(GetExpensesException.InvalidUserId)
-        }
-
-        if (monthKey.isBlank() || !isValidMonthKey(monthKey)) {
-            return Result.failure(GetExpensesException.InvalidMonthKey)
-        }
-
-        return try {
-            val result = expenseRepository.getExpensesByMonth(userId, monthKey)
-            result.fold(
-                onSuccess = { expenses ->
-                    val monthlyExpenses = expenses.toMonthlyExpenses(monthKey)
-                    Result.success(monthlyExpenses)
-                },
-                onFailure = { exception ->
-                    Result.failure(mapExpenseException(exception))
-                }
-            )
-        } catch (e: Exception) {
-            Result.failure(GetExpensesException.UnknownError(e.message ?: "Unknown error occurred"))
-        }
-    }
-
-    /**
      * Maps repository exceptions to use case specific exceptions
      */
     private fun mapExpenseException(exception: Throwable): GetExpensesException {
@@ -113,20 +81,6 @@ class GetExpensesUseCase @Inject constructor(
                 GetExpensesException.RequestTimeout
             }
             else -> GetExpensesException.UnknownError(exception.message ?: "Failed to fetch expenses")
-        }
-    }
-
-    /**
-     * Validates month key format (yyyy-MM)
-     */
-    private fun isValidMonthKey(monthKey: String): Boolean {
-        return try {
-            val formatter = SimpleDateFormat("yyyy-MM", Locale.getDefault())
-            formatter.isLenient = false
-            formatter.parse(monthKey)
-            true
-        } catch (e: Exception) {
-            false
         }
     }
 }

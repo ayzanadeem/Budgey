@@ -45,14 +45,6 @@ interface ExpenseRepository {
      * @return Flow emitting Result with list of expenses ordered by date descending
      */
     fun getExpenses(userId: String): Flow<Result<List<Expense>>>
-
-    /**
-     * Retrieves expenses for a specific user within a given month
-     * @param userId The ID of the user whose expenses to retrieve
-     * @param monthKey The month key in format "yyyy-MM" (e.g., "2025-09")
-     * @return Result containing list of expenses for the specified month
-     */
-    suspend fun getExpensesByMonth(userId: String, monthKey: String): Result<List<Expense>>
 }
 
 @Singleton
@@ -73,9 +65,7 @@ class ExpenseRepositoryImpl @Inject constructor(
                 "Adding new expense: ${expense.amount} for user: ${expense.userId}"
             )
 
-            // Auto-generate budget month key
-            val currentDate = Date()
-            val budgetMonthKey = generateBudgetMonthKey(currentDate)
+            val budgetMonthKey = generateBudgetMonthKey(budgetStartDate, budgetEndDate)
 
             val expenseWithGeneratedFields = expense.copy(
                 budgetMonthKey = budgetMonthKey,
@@ -142,42 +132,16 @@ class ExpenseRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getExpensesByMonth(
-        userId: String,
-        monthKey: String
-    ): Result<List<Expense>> {
-        return try {
-            Log.d(ExpenseConstants.TAG, "Fetching expenses for user: $userId, month: $monthKey")
-
-            val snapshot = expensesCollection
-                .whereEqualTo(ExpenseConstants.FIELD_USER_ID, userId)
-                .whereEqualTo(ExpenseConstants.FIELD_BUDGET_MONTH_KEY, monthKey)
-                .orderBy(ExpenseConstants.FIELD_CREATED_AT, Query.Direction.DESCENDING)
-                .get()
-                .await()
-
-            val expenses = snapshot.documents.mapNotNull { doc ->
-                doc.toExpense()?.also { expense ->
-                    Log.d(ExpenseConstants.TAG, "Retrieved monthly expense: ${expense.amount}")
-                }
-            }
-
-            Log.d(ExpenseConstants.TAG, "Retrieved ${expenses.size} expenses for month $monthKey")
-            Result.success(expenses)
-        } catch (e: Exception) {
-            Log.e(ExpenseConstants.TAG, "Failed to get expenses for month $monthKey", e)
-            Result.failure(e)
-        }
-    }
-
     /**
      * Helper method to generate budget month key from date
      * @param date The date to generate month key from
      * @return Month key in format "yyyy-MM"
      */
-    private fun generateBudgetMonthKey(date: Date = Date()): String {
-        val formatter = SimpleDateFormat("yyyy-MM", Locale.getDefault())
-        return formatter.format(date)
+    private fun generateBudgetMonthKey(budgetStartDate: Timestamp, budgetEndDate: Timestamp): String {
+        val formatter = SimpleDateFormat("ddMMyy", Locale.getDefault())
+        val startDate = Date(budgetStartDate.seconds * 1000)
+        val endDate = Date(budgetEndDate.seconds * 1000)
+        return formatter.format(startDate) + formatter.format(endDate)
     }
 }
 

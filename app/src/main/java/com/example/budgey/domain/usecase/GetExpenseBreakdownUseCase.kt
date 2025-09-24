@@ -29,7 +29,7 @@ data class CategoryBreakdown(
  */
 data class MonthlyBreakdown(
     val monthKey: String,
-    val monthDisplayName: String,
+    val monthDisplayTitle: String,
     val categories: List<CategoryBreakdown>,
     val totalExpenses: Double,
     val totalIncome: Double,
@@ -111,38 +111,6 @@ class GetExpenseBreakdownUseCase @Inject constructor(
     }
 
     /**
-     * Gets breakdown for a specific month with detailed category analysis
-     * @param userId The ID of the user
-     * @param monthKey The month key in format "yyyy-MM"
-     * @return Result with detailed monthly breakdown
-     */
-    suspend fun getMonthlyBreakdown(userId: String, monthKey: String): Result<MonthlyBreakdown> {
-        // Input validation
-        if (userId.isBlank()) {
-            return Result.failure(ExpenseBreakdownException.InvalidUserId)
-        }
-
-        if (monthKey.isBlank() || !isValidMonthKey(monthKey)) {
-            return Result.failure(ExpenseBreakdownException.InvalidMonthKey)
-        }
-
-        return try {
-            val result = expenseRepository.getExpensesByMonth(userId, monthKey)
-            result.fold(
-                onSuccess = { expenses ->
-                    val breakdown = expenses.toMonthlyBreakdown(monthKey)
-                    Result.success(breakdown)
-                },
-                onFailure = { exception ->
-                    Result.failure(mapBreakdownException(exception))
-                }
-            )
-        } catch (e: Exception) {
-            Result.failure(ExpenseBreakdownException.UnknownError(e.message ?: "Unknown error occurred"))
-        }
-    }
-
-    /**
      * Maps repository exceptions to use case specific exceptions
      */
     private fun mapBreakdownException(exception: Throwable): ExpenseBreakdownException {
@@ -157,20 +125,6 @@ class GetExpenseBreakdownUseCase @Inject constructor(
                 ExpenseBreakdownException.RequestTimeout
             }
             else -> ExpenseBreakdownException.UnknownError(exception.message ?: "Failed to fetch breakdown")
-        }
-    }
-
-    /**
-     * Validates month key format (yyyy-MM)
-     */
-    private fun isValidMonthKey(monthKey: String): Boolean {
-        return try {
-            val formatter = SimpleDateFormat("yyyy-MM", Locale.getDefault())
-            formatter.isLenient = false
-            formatter.parse(monthKey)
-            true
-        } catch (e: Exception) {
-            false
         }
     }
 }
@@ -210,7 +164,7 @@ fun List<Expense>.toMonthlyBreakdown(monthKey: String): MonthlyBreakdown {
 
     return MonthlyBreakdown(
         monthKey = monthKey,
-        monthDisplayName = monthKey.toDisplayName(),
+        monthDisplayTitle = getDisplayMonthTitle(),
         categories = categoryBreakdowns,
         totalExpenses = expensesList.sumOf { it.amount },
         totalIncome = incomeList.sumOf { it.amount },
@@ -218,6 +172,18 @@ fun List<Expense>.toMonthlyBreakdown(monthKey: String): MonthlyBreakdown {
         expenseCount = expensesList.size,
         incomeCount = incomeList.size
     )
+}
+
+private fun List<Expense>.getDisplayMonthTitle(
+): String {
+    if (this.isEmpty()) return ""
+    val formatter = SimpleDateFormat("dd/MM/yy", Locale.getDefault())
+
+    val startDate = first().budgetStartDate.toDate()
+    val endDate = first().budgetEndDate.toDate()
+    val startStr = formatter.format(startDate)
+    val endStr = formatter.format(endDate)
+    return "$startStr - $endStr"
 }
 
 fun List<Expense>.toCategoryBreakdown(categoryId: String, categoryName: String, monthlyTotal: Double): CategoryBreakdown {
@@ -275,7 +241,6 @@ fun List<MonthlyBreakdown>.toOverallTotals(): OverallTotals {
  */
 sealed class ExpenseBreakdownException(message: String) : Exception(message) {
     object InvalidUserId : ExpenseBreakdownException("User ID cannot be empty")
-    object InvalidMonthKey : ExpenseBreakdownException("Month key must be in format yyyy-MM")
     object InvalidMonthLimit : ExpenseBreakdownException("Month limit must be between 1 and 24")
     object NetworkError : ExpenseBreakdownException("Network connection failed. Please check your internet connection")
     object PermissionDenied : ExpenseBreakdownException("You don't have permission to access expense breakdown")

@@ -4,6 +4,7 @@ import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.PropertyName
 import com.google.firebase.firestore.ServerTimestamp
+import java.sql.Time
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -27,10 +28,10 @@ data class Expense(
     val amount: Double = 0.0,
 
     @PropertyName("budget_start_date")
-    val budgetStartDate: Timestamp? = null,
+    val budgetStartDate: Timestamp,
 
     @PropertyName("budget_end_date")
-    val budgetEndDate: Timestamp? = null,
+    val budgetEndDate: Timestamp,
 
     @PropertyName("created_at")
     @ServerTimestamp
@@ -58,7 +59,9 @@ data class Expense(
     val tags: List<String> = emptyList()
 ) {
     // No-argument constructor required by Firestore
-    constructor() : this("", "", "", 0.0, null, null, null, "", null, ExpenseType.EXPENSE, "USD", null, null, emptyList())
+    constructor() : this("", "", "", 0.0,
+        Timestamp.now(),
+        Timestamp.now(), null, "", null, ExpenseType.EXPENSE, "USD", null, null, emptyList())
 }
 
 /**
@@ -108,8 +111,8 @@ fun DocumentSnapshot.toExpense(): Expense? {
             categoryId = getString("category_id") ?: "",
             categoryName = getString("category_name") ?: "",
             amount = getDouble("amount") ?: 0.0,
-            budgetStartDate = getTimestamp("budget_start_date"),
-            budgetEndDate = getTimestamp("budget_end_date"),
+            budgetStartDate = getTimestamp("budget_start_date") ?: Timestamp.now(),
+            budgetEndDate = getTimestamp("budget_end_date") ?: Timestamp.now(),
             createdAt = getTimestamp("created_at"),
             budgetMonthKey = getString("budget_month_key") ?: "",
             description = getString("description"),
@@ -122,112 +125,4 @@ fun DocumentSnapshot.toExpense(): Expense? {
     } catch (e: Exception) {
         null
     }
-}
-
-/**
- * Helper functions for budget month key generation and date handling
- */
-fun generateBudgetMonthKey(date: Date = Date()): String {
-    val formatter = SimpleDateFormat("yyyy-MM", Locale.getDefault())
-    return formatter.format(date)
-}
-
-fun generateBudgetMonthKey(timestamp: Timestamp): String {
-    return generateBudgetMonthKey(timestamp.toDate())
-}
-
-fun getBudgetPeriodDates(date: Date = Date()): Pair<Timestamp, Timestamp> {
-    val calendar = Calendar.getInstance()
-    calendar.time = date
-
-    // Start of month
-    calendar.set(Calendar.DAY_OF_MONTH, 1)
-    calendar.set(Calendar.HOUR_OF_DAY, 0)
-    calendar.set(Calendar.MINUTE, 0)
-    calendar.set(Calendar.SECOND, 0)
-    calendar.set(Calendar.MILLISECOND, 0)
-    val startDate = Timestamp(calendar.time)
-
-    // End of month
-    calendar.set(Calendar.DAY_OF_MONTH, calendar.getActualMaximum(Calendar.DAY_OF_MONTH))
-    calendar.set(Calendar.HOUR_OF_DAY, 23)
-    calendar.set(Calendar.MINUTE, 59)
-    calendar.set(Calendar.SECOND, 59)
-    calendar.set(Calendar.MILLISECOND, 999)
-    val endDate = Timestamp(calendar.time)
-
-    return Pair(startDate, endDate)
-}
-
-/**
- * Extension functions for Expense operations
- */
-fun Expense.isIncome(): Boolean = type == ExpenseType.INCOME
-
-fun Expense.isExpense(): Boolean = type == ExpenseType.EXPENSE
-
-fun Expense.withDescription(newDescription: String): Expense {
-    return this.copy(description = newDescription)
-}
-
-fun Expense.withAmount(newAmount: Double): Expense {
-    return this.copy(amount = newAmount)
-}
-
-fun Expense.withCategory(categoryId: String, categoryName: String): Expense {
-    return this.copy(categoryId = categoryId, categoryName = categoryName)
-}
-
-fun Expense.addTag(tag: String): Expense {
-    return if (tag !in tags) {
-        this.copy(tags = tags + tag)
-    } else {
-        this
-    }
-}
-
-fun Expense.removeTag(tag: String): Expense {
-    return this.copy(tags = tags - tag)
-}
-
-fun Expense.withPaymentMethod(method: String): Expense {
-    return this.copy(paymentMethod = method)
-}
-
-fun Expense.getFormattedAmount(): String {
-    val sign = if (isIncome()) "+" else "-"
-    return "$sign$currency %.2f".format(amount)
-}
-
-fun Expense.isInCurrentMonth(): Boolean {
-    val currentMonthKey = generateBudgetMonthKey()
-    return budgetMonthKey == currentMonthKey
-}
-
-/**
- * Factory function to create a new expense with proper budget period setup
- */
-fun createExpense(
-    userId: String,
-    categoryId: String,
-    categoryName: String,
-    amount: Double,
-    type: ExpenseType = ExpenseType.EXPENSE,
-    description: String? = null,
-    date: Date = Date()
-): Expense {
-    val budgetPeriod = getBudgetPeriodDates(date)
-    val monthKey = generateBudgetMonthKey(date)
-
-    return Expense(
-        userId = userId,
-        categoryId = categoryId,
-        categoryName = categoryName,
-        amount = amount,
-        budgetStartDate = budgetPeriod.first,
-        budgetEndDate = budgetPeriod.second,
-        budgetMonthKey = monthKey,
-        description = description,
-        type = type
-    )
 }

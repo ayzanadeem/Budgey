@@ -1,5 +1,6 @@
 package com.example.budgey.presentation.ui.screens
 
+import android.R.attr.fontWeight
 import android.content.res.Configuration
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -427,7 +428,7 @@ private fun MonthlyBreakdownItem(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = formatMonthRange(monthBreakdown.monthKey),
+                            text = monthBreakdown.monthDisplayTitle,
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.SemiBold
                             ),
@@ -694,7 +695,7 @@ private fun ExpenseBreakdownScreenPreview() {
                     monthlyBreakdowns = listOf(
                         MonthlyBreakdown(
                             monthKey = "2024-01",
-                            monthDisplayName = "January 2024",
+                            monthDisplayTitle = "January 2024",
                             categories = listOf(
                                 CategoryBreakdown(
                                     categoryId = "food",
@@ -703,12 +704,16 @@ private fun ExpenseBreakdownScreenPreview() {
                                         Expense(
                                             amount = 15000.0,
                                             description = "Grocery shopping",
-                                            createdAt = Timestamp.now()
+                                            createdAt = Timestamp.now(),
+                                            budgetStartDate = Timestamp.now(),
+                                            budgetEndDate = Timestamp.now()
                                         ),
                                         Expense(
                                             amount = 10000.0,
                                             description = "Restaurant dinner",
-                                            createdAt = Timestamp.now()
+                                            createdAt = Timestamp.now(),
+                                            budgetStartDate = Timestamp.now(),
+                                            budgetEndDate = Timestamp.now()
                                         )
                                     ),
                                     totalAmount = 25000.0,
@@ -723,7 +728,9 @@ private fun ExpenseBreakdownScreenPreview() {
                                         Expense(
                                             amount = 20650.0,
                                             description = "Fuel",
-                                            createdAt = Timestamp.now()
+                                            createdAt = Timestamp.now(),
+                                            budgetStartDate = Timestamp.now(),
+                                            budgetEndDate = Timestamp.now()
                                         )
                                     ),
                                     totalAmount = 20650.0,

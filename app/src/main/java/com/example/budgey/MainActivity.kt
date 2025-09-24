@@ -30,6 +30,6 @@ fun BudgeyAppPreview() {
 }
 
 //todo:
-// fix focus automatic capture when screen open
 // add pagination to expenses list
-// change budget month key logic + change how header shows month
+// fix start date and end date UI
+// show loader on save expense button
