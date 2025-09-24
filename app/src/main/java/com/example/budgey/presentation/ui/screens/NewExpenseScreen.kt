@@ -94,7 +94,6 @@ private fun NewExpenseScreenContent(
 ) {
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-    val amountFocusRequester = remember { FocusRequester() }
     val descriptionFocusRequester = remember { FocusRequester() }
 
     // Form validation states
@@ -153,8 +152,7 @@ private fun NewExpenseScreenContent(
                         value = uiState.amount,
                         onValueChange = onAmountChange,
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .focusRequester(amountFocusRequester),
+                            .fillMaxWidth(),
                         label = "Amount (PKR)",
                         placeholder = "0.00",
                         leadingIcon = ImageVector.vectorResource(R.drawable.rupee_symbol),
