@@ -20,4 +20,11 @@ data class ExpenseBreakdownUiState(
     val errorMessage: String? = null,
     // Chart data states
     val isChartDataReady: Boolean = false,
+    // Pagination states
+    val pageNo: Int = 1,
+    val pageSize: Int = 10,
+    val hasNextPage: Boolean = false,
+    val hasPreviousPage: Boolean = false,
+    val totalPages: Int = 0,
+    val totalItems: Int = 0
 )

@@ -1,6 +1,5 @@
 package com.example.budgey.presentation.ui.screens
 
-import android.R.attr.fontWeight
 import android.content.res.Configuration
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -55,6 +54,8 @@ fun ExpenseBreakdownScreen(
         uiState = uiState,
         onRetry = viewModel::retryLoadExpenseBreakdown,
         onRefresh = viewModel::refreshExpenseBreakdown,
+        onNextPage = viewModel::loadNextPage,
+        onPreviousPage = viewModel::loadPreviousPage,
         modifier = modifier
     )
 }
@@ -65,6 +66,8 @@ private fun ExpenseBreakdownScreenContent(
     uiState: ExpenseBreakdownUiState,
     onRetry: () -> Unit,
     onRefresh: () -> Unit,
+    onNextPage: () -> Unit,
+    onPreviousPage: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     // State for expandable sections
@@ -72,6 +75,32 @@ private fun ExpenseBreakdownScreenContent(
     var expandedCategories by remember { mutableStateOf(setOf<String>()) }
 
     val lazyListState = rememberLazyListState()
+
+    // Pull to refresh functionality
+    LaunchedEffect(key1 = onRefresh) {
+        // This can be used for pull-to-refresh if needed
+    }
+
+    // Infinite scroll effect
+    LaunchedEffect(lazyListState, uiState.hasNextPage, uiState.isLoading, uiState.expenseBreakdown) {
+        snapshotFlow { lazyListState.layoutInfo.visibleItemsInfo }
+            .collect { visibleItems ->
+                val lastVisibleItem = visibleItems.lastOrNull()
+                val totalItems = lazyListState.layoutInfo.totalItemsCount
+
+                // Load next page when user is near the bottom (within 2 items)
+                if (lastVisibleItem != null &&
+                    lastVisibleItem.index >= totalItems - 2 &&
+                    uiState.hasNextPage &&
+                    !uiState.isLoading &&
+                    uiState.expenseBreakdown != null &&
+                    totalItems > 0
+                ) {
+                    println("🔥 DEBUG: Triggering next page load - lastIndex: ${lastVisibleItem.index}, totalItems: $totalItems, hasNextPage: ${uiState.hasNextPage}")
+                    onNextPage()
+                }
+            }
+    }
 
     Box(
         modifier = modifier
@@ -92,25 +121,27 @@ private fun ExpenseBreakdownScreenContent(
             ExpenseBreakdownHeader()
 
             when {
-                uiState.isLoading -> {
-                    // Shimmer loading effect
+                uiState.isLoading && uiState.expenseBreakdown == null -> {
+                    // Initial loading - show shimmer
                     ExpenseBreakdownShimmer()
                 }
-                uiState.errorMessage != null -> {
-                    // Error state
+                uiState.errorMessage != null && uiState.expenseBreakdown == null -> {
+                    // Error state when no data exists
                     ExpenseBreakdownError(
                         errorMessage = uiState.errorMessage,
                         onRetry = onRetry
                     )
                 }
                 uiState.expenseBreakdown?.monthlyBreakdowns?.isNotEmpty() == true -> {
-                    // Content with data
+                    // Content with infinite scroll
                     LazyColumn(
                         state = lazyListState,
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(
-                            horizontal = BudgeySpacing.lg,
-                            vertical = BudgeySpacing.md
+                            start = BudgeySpacing.lg,
+                            end = BudgeySpacing.lg,
+                            top = BudgeySpacing.md,
+                            bottom = BudgeySpacing.lg
                         ),
                         verticalArrangement = Arrangement.spacedBy(BudgeySpacing.md)
                     ) {
@@ -137,6 +168,115 @@ private fun ExpenseBreakdownScreenContent(
                                     }
                                 }
                             )
+                        }
+
+                        // Loading indicator at bottom while loading next page
+                        if (uiState.isLoading && uiState.hasNextPage) {
+                            item(key = "loading_indicator") {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = BudgeySpacing.lg),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(BudgeySpacing.sm)
+                                    ) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(32.dp),
+                                            color = MaterialTheme.colorScheme.primary,
+                                            strokeWidth = 3.dp
+                                        )
+                                        Text(
+                                            text = "Loading more expenses...",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // End of list indicator when no more pages
+                        if (!uiState.hasNextPage && !uiState.isLoading && uiState.pageNo > 1) {
+                            item(key = "end_indicator") {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = BudgeySpacing.lg),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Card(
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                        ),
+                                        modifier = Modifier.padding(BudgeySpacing.md)
+                                    ) {
+                                        Text(
+                                            text = "You've reached the end",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(
+                                                horizontal = BudgeySpacing.md,
+                                                vertical = BudgeySpacing.sm
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // Error message for pagination errors
+                        if (uiState.errorMessage != null && uiState.expenseBreakdown != null && !uiState.isLoading) {
+                            item(key = "error_indicator") {
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = BudgeySpacing.sm),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f)
+                                    )
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(BudgeySpacing.md),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(BudgeySpacing.sm)
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(BudgeySpacing.sm)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Warning,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.error,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Text(
+                                                text = "Failed to load more",
+                                                style = MaterialTheme.typography.bodyMedium.copy(
+                                                    fontWeight = FontWeight.SemiBold
+                                                ),
+                                                color = MaterialTheme.colorScheme.onErrorContainer
+                                            )
+                                        }
+                                        Text(
+                                            text = uiState.errorMessage,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onErrorContainer
+                                        )
+                                        BudgeySecondaryButton(
+                                            onClick = onNextPage,
+                                            text = "Try Again",
+                                            icon = Icons.Default.Refresh,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -660,21 +800,6 @@ private fun formatAmount(amount: Double): String {
     return formatter.format(amount)
 }
 
-private fun formatMonthRange(monthKey: String): String {
-    // Format: "DD MMM YY - DD MMM YY"
-    // This is a simplified version - adjust based on your monthKey format
-    return try {
-        val parts = monthKey.split("-")
-        if (parts.size >= 2) {
-            "${parts[0]} - ${parts[1]}"
-        } else {
-            monthKey
-        }
-    } catch (e: Exception) {
-        monthKey
-    }
-}
-
 private fun formatDate(timestamp: Timestamp?): String {
     return timestamp?.let {
         val formatter = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
@@ -707,36 +832,12 @@ private fun ExpenseBreakdownScreenPreview() {
                                             createdAt = Timestamp.now(),
                                             budgetStartDate = Timestamp.now(),
                                             budgetEndDate = Timestamp.now()
-                                        ),
-                                        Expense(
-                                            amount = 10000.0,
-                                            description = "Restaurant dinner",
-                                            createdAt = Timestamp.now(),
-                                            budgetStartDate = Timestamp.now(),
-                                            budgetEndDate = Timestamp.now()
                                         )
                                     ),
                                     totalAmount = 25000.0,
                                     expenseCount = 2,
                                     averageAmount = 12500.0,
                                     percentage = 54.9
-                                ),
-                                CategoryBreakdown(
-                                    categoryId = "transport",
-                                    categoryName = "Transport",
-                                    expenses = listOf(
-                                        Expense(
-                                            amount = 20650.0,
-                                            description = "Fuel",
-                                            createdAt = Timestamp.now(),
-                                            budgetStartDate = Timestamp.now(),
-                                            budgetEndDate = Timestamp.now()
-                                        )
-                                    ),
-                                    totalAmount = 20650.0,
-                                    expenseCount = 1,
-                                    averageAmount = 20650.0,
-                                    percentage = 45.1
                                 )
                             ),
                             totalExpenses = 45650.0,
@@ -759,7 +860,9 @@ private fun ExpenseBreakdownScreenPreview() {
                 )
             ),
             onRetry = {},
-            onRefresh = {}
+            onRefresh = {},
+            onNextPage = {},
+            onPreviousPage = {}
         )
     }
 }
@@ -772,7 +875,9 @@ private fun ExpenseBreakdownLoadingPreview() {
         ExpenseBreakdownScreenContent(
             uiState = ExpenseBreakdownUiState(isLoading = true),
             onRetry = {},
-            onRefresh = {}
+            onRefresh = {},
+            onNextPage = {},
+            onPreviousPage = {}
         )
     }
 }
@@ -787,7 +892,9 @@ private fun ExpenseBreakdownErrorPreview() {
                 errorMessage = "Failed to load expense breakdown. Please check your connection and try again."
             ),
             onRetry = {},
-            onRefresh = {}
+            onRefresh = {},
+            onNextPage = {},
+            onPreviousPage = {}
         )
     }
 }

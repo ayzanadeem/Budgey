@@ -111,6 +111,68 @@ class GetExpenseBreakdownUseCase @Inject constructor(
     }
 
     /**
+     * Gets comprehensive expense breakdown grouped by month then category with pagination
+     * @param userId The ID of the user whose expense breakdown to fetch
+     * @param pageNumber The page number (starting from 1)
+     * @param pageSize The number of items per page (default 10)
+     * @param limitMonths Optional limit for number of recent months (default: 12)
+     * @return Flow emitting Result with complete expense breakdown
+     */
+    fun getPaginated(userId: String, pageNumber: Int = 1, pageSize: Int = 10, limitMonths: Int = 12): Flow<Result<ExpenseBreakdown>> {
+        // Input validation
+        if (userId.isBlank()) {
+            return kotlinx.coroutines.flow.flowOf(
+                Result.failure(ExpenseBreakdownException.InvalidUserId)
+            )
+        }
+
+        if (pageNumber < 1) {
+            return kotlinx.coroutines.flow.flowOf(
+                Result.failure(ExpenseBreakdownException.InvalidPageNumber)
+            )
+        }
+
+        if (pageSize < 1 || pageSize > 100) {
+            return kotlinx.coroutines.flow.flowOf(
+                Result.failure(ExpenseBreakdownException.InvalidPageSize)
+            )
+        }
+
+        if (limitMonths <= 0 || limitMonths > 24) {
+            return kotlinx.coroutines.flow.flowOf(
+                Result.failure(ExpenseBreakdownException.InvalidMonthLimit)
+            )
+        }
+
+        return expenseRepository.getExpensesPaginated(userId, pageNumber, pageSize)
+            .map { result ->
+                result.fold(
+                    onSuccess = { expenses ->
+                        try {
+                            val breakdown = expenses.toExpenseBreakdown(limitMonths)
+                            Result.success(breakdown)
+                        } catch (e: Exception) {
+                            Result.failure(ExpenseBreakdownException.DataProcessingError(e.message ?: "Failed to process breakdown"))
+                        }
+                    },
+                    onFailure = { exception ->
+                        Result.failure(mapBreakdownException(exception))
+                    }
+                )
+            }
+            .catch { exception ->
+                emit(Result.failure(mapBreakdownException(exception)))
+            }
+    }
+
+    /**
+     * Reset pagination cursor (useful for refresh operations)
+     */
+    fun resetPaginationCursor() {
+        expenseRepository.resetPaginationCursor()
+    }
+
+    /**
      * Maps repository exceptions to use case specific exceptions
      */
     private fun mapBreakdownException(exception: Throwable): ExpenseBreakdownException {
@@ -137,7 +199,6 @@ fun List<Expense>.toExpenseBreakdown(limitMonths: Int): ExpenseBreakdown {
     val monthlyBreakdowns = this.groupBy { it.budgetMonthKey }
         .toSortedMap(reverseOrder()) // Most recent first
         .entries
-        .take(limitMonths)
         .map { (monthKey, expenses) ->
             expenses.toMonthlyBreakdown(monthKey)
         }
@@ -242,6 +303,8 @@ fun List<MonthlyBreakdown>.toOverallTotals(): OverallTotals {
 sealed class ExpenseBreakdownException(message: String) : Exception(message) {
     object InvalidUserId : ExpenseBreakdownException("User ID cannot be empty")
     object InvalidMonthLimit : ExpenseBreakdownException("Month limit must be between 1 and 24")
+    object InvalidPageNumber : ExpenseBreakdownException("Page number must be greater than 0")
+    object InvalidPageSize : ExpenseBreakdownException("Page size must be between 1 and 100")
     object NetworkError : ExpenseBreakdownException("Network connection failed. Please check your internet connection")
     object PermissionDenied : ExpenseBreakdownException("You don't have permission to access expense breakdown")
     object RequestTimeout : ExpenseBreakdownException("Request timed out. Please try again")

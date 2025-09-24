@@ -18,7 +18,7 @@ import javax.inject.Inject
 
 /**
  * ViewModel for Expense Breakdown screen following MVVM with clean architecture
- * Handles UI state management and data loading
+ * Handles UI state management and data loading with pagination support
  */
 @HiltViewModel
 class ExpenseBreakdownViewModel @Inject constructor(
@@ -29,12 +29,16 @@ class ExpenseBreakdownViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ExpenseBreakdownUiState())
     val uiState: StateFlow<ExpenseBreakdownUiState> = _uiState.asStateFlow()
 
+    companion object {
+        private const val PAGE_SIZE = 10
+    }
+
     init {
         loadExpenseBreakdown()
     }
 
     /**
-     * Loads expense breakdown with loading state management
+     * Loads expense breakdown with pagination support
      */
     fun loadExpenseBreakdown() {
         val currentUserId = firebaseAuth.currentUser?.uid
@@ -52,7 +56,11 @@ class ExpenseBreakdownViewModel @Inject constructor(
         )
 
         viewModelScope.launch {
-            getExpenseBreakdownUseCase(currentUserId)
+            getExpenseBreakdownUseCase.getPaginated(
+                userId = currentUserId,
+                pageNumber = _uiState.value.pageNo,
+                pageSize = PAGE_SIZE
+            )
                 .catch { exception ->
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
@@ -61,11 +69,73 @@ class ExpenseBreakdownViewModel @Inject constructor(
                 }
                 .collect { result ->
                     result.fold(
-                        onSuccess = { breakdown ->
+                        onSuccess = { newBreakdown ->
+                            val currentPage = _uiState.value.pageNo
+                            val currentBreakdown = _uiState.value.expenseBreakdown
+
+                            val combinedBreakdown = if (currentPage == 1 || currentBreakdown == null) {
+                                // First page or refresh - replace data
+                                newBreakdown
+                            } else {
+                                // Subsequent pages - append data
+                                val existingMonthlyBreakdowns = currentBreakdown.monthlyBreakdowns.toMutableList()
+
+                                // Add new monthly breakdowns that don't already exist
+                                newBreakdown.monthlyBreakdowns.forEach { newMonth ->
+                                    val existingIndex = existingMonthlyBreakdowns.indexOfFirst { it.monthKey == newMonth.monthKey }
+                                    if (existingIndex >= 0) {
+                                        // Month exists - merge categories
+                                        val existingMonth = existingMonthlyBreakdowns[existingIndex]
+                                        val mergedCategories = (existingMonth.categories + newMonth.categories)
+                                            .groupBy { it.categoryId }
+                                            .map { (_, categories) ->
+                                                if (categories.size == 1) {
+                                                    categories.first()
+                                                } else {
+                                                    // Merge categories with same ID
+                                                    val allExpenses = categories.flatMap { it.expenses }
+                                                    categories.first().copy(
+                                                        expenses = allExpenses,
+                                                        totalAmount = allExpenses.sumOf { it.amount },
+                                                        expenseCount = allExpenses.size,
+                                                        averageAmount = if (allExpenses.isNotEmpty()) allExpenses.sumOf { it.amount } / allExpenses.size else 0.0
+                                                    )
+                                                }
+                                            }
+
+                                        existingMonthlyBreakdowns[existingIndex] = existingMonth.copy(
+                                            categories = mergedCategories,
+                                            totalExpenses = mergedCategories.sumOf { it.totalAmount },
+                                            expenseCount = mergedCategories.sumOf { it.expenseCount }
+                                        )
+                                    } else {
+                                        // New month - add it
+                                        existingMonthlyBreakdowns.add(newMonth)
+                                    }
+                                }
+
+                                // Sort by month key descending (most recent first)
+                                existingMonthlyBreakdowns.sortByDescending { it.monthKey }
+
+                                currentBreakdown.copy(
+                                    monthlyBreakdowns = existingMonthlyBreakdowns
+                                )
+                            }
+
+                            val itemsReceived = newBreakdown.monthlyBreakdowns.flatMap { month ->
+                                month.categories.flatMap { category -> category.expenses }
+                            }.size
+
+                            println("🔥 DEBUG ViewModel: Page $currentPage loaded ${itemsReceived} raw expenses, PAGE_SIZE=$PAGE_SIZE")
+                            println("🔥 DEBUG ViewModel: Setting hasNextPage = ${itemsReceived >= PAGE_SIZE}")
+
                             _uiState.value = _uiState.value.copy(
                                 isLoading = false,
-                                expenseBreakdown = breakdown,
-                                errorMessage = null
+                                expenseBreakdown = combinedBreakdown,
+                                errorMessage = null,
+                                hasNextPage = itemsReceived >= PAGE_SIZE, // If we got full page of expenses, likely more data
+                                hasPreviousPage = currentPage > 1,
+                                pageSize = PAGE_SIZE
                             )
                         },
                         onFailure = { exception ->
@@ -80,14 +150,60 @@ class ExpenseBreakdownViewModel @Inject constructor(
     }
 
     /**
-     * Refreshes expense breakdown data
+     * Loads the next page of expenses (for infinite scroll)
      */
-    fun refreshExpenseBreakdown() {
+    fun loadNextPage() {
+        if (_uiState.value.isLoading || !_uiState.value.hasNextPage) return
+
+        val currentPage = _uiState.value.pageNo
+        _uiState.value = _uiState.value.copy(pageNo = currentPage + 1)
         loadExpenseBreakdown()
     }
 
     /**
-     * Retries loading expense breakdown
+     * Loads the previous page of expenses
+     */
+    fun loadPreviousPage() {
+        val currentPage = _uiState.value.pageNo
+        if (currentPage > 1) {
+            _uiState.value = _uiState.value.copy(pageNo = currentPage - 1)
+            loadExpenseBreakdown()
+        }
+    }
+
+    /**
+     * Loads a specific page of expenses
+     */
+    fun loadPage(pageNumber: Int) {
+        if (pageNumber >= 1) {
+            _uiState.value = _uiState.value.copy(pageNo = pageNumber)
+            loadExpenseBreakdown()
+        }
+    }
+
+    /**
+     * Resets to the first page and reloads
+     */
+    fun resetToFirstPage() {
+        _uiState.value = _uiState.value.copy(pageNo = 1)
+        loadExpenseBreakdown()
+    }
+
+    /**
+     * Refreshes expense breakdown data (resets to first page)
+     */
+    fun refreshExpenseBreakdown() {
+        // Reset pagination cursor and page number
+        getExpenseBreakdownUseCase.resetPaginationCursor()
+        _uiState.value = _uiState.value.copy(
+            pageNo = 1,
+            expenseBreakdown = null // Clear existing data to show fresh results
+        )
+        loadExpenseBreakdown()
+    }
+
+    /**
+     * Retries loading expense breakdown for current page
      */
     fun retryLoadExpenseBreakdown() {
         loadExpenseBreakdown()
