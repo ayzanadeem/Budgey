@@ -1,5 +1,6 @@
 package com.example.budgey.presentation.ui.screens
 
+import android.R.attr.text
 import android.content.res.Configuration
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -144,7 +145,7 @@ private fun NewExpenseScreenContent(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(BudgeySpacing.lg),
+                        .padding(vertical = BudgeySpacing.lg, horizontal = 13.dp),
                     verticalArrangement = Arrangement.spacedBy(BudgeySpacing.lg)
                 ) {
                     // Amount Field
@@ -156,7 +157,7 @@ private fun NewExpenseScreenContent(
                             .focusRequester(amountFocusRequester),
                         label = "Amount (PKR)",
                         placeholder = "0.00",
-                        leadingIcon = ImageVector.vectorResource(R.drawable.attach_money),
+                        leadingIcon = ImageVector.vectorResource(R.drawable.rupee_symbol),
                         isError = uiState.amount.isNotEmpty() && !isAmountValid,
                         errorMessage = if (uiState.amount.isNotEmpty() && !isAmountValid) {
                             "Please enter a valid amount greater than 0"
@@ -191,7 +192,7 @@ private fun NewExpenseScreenContent(
                         modifier = Modifier
                             .fillMaxWidth()
                             .focusRequester(descriptionFocusRequester),
-                        label = "Description (Optional)",
+                        label = "Expense Description",
                         placeholder = "Add a note about this expense",
                         leadingIcon = Icons.Default.Edit,
                         keyboardOptions = KeyboardOptions(
@@ -226,7 +227,7 @@ private fun NewExpenseScreenContent(
                         },
                         modifier = Modifier.fillMaxWidth(),
                         enabled = isFormValid,
-                        loading = false, // Add loading state from ViewModel if needed
+                        loading = uiState.isSavingExpense,
                         text = "Save Expense",
                         icon = Icons.Default.Add
                     )
@@ -308,7 +309,7 @@ private fun CategorySelectionSection(
                     options = categories.map { it.name },
                     selectedOption = selectedCategory.takeIf { it.isNotEmpty() },
                     onOptionSelected = onCategorySelected,
-                    label = "Category",
+                    label = "Expense Type",
                     placeholder = "Select a category",
                     leadingIcon = Icons.AutoMirrored.Outlined.List,
                     isError = selectedCategory.isEmpty(),
@@ -451,16 +452,19 @@ private fun DateSelectionSection(
     onStartDateSelected: (LocalDate) -> Unit,
     onEndDateSelected: (LocalDate) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(BudgeySpacing.sm)) {
+    Column(
+        modifier = Modifier.padding(top = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(BudgeySpacing.sm)
+    ) {
         Text(
             text = "Budget Period",
-            style = BudgeyTextStyles.inputLabel,
+            style = BudgeyTextStyles.amountSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(BudgeySpacing.md)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             // Start Date
             BudgeyDatePicker(
@@ -568,6 +572,8 @@ private fun NewExpenseScreenPreview() {
     BudgeyTheme {
         NewExpenseScreenContent(
             uiState = NewExpenseUiState(
+                budgetStartDate = Timestamp.now(),
+                budgetEndDate = Timestamp.now(),
                 amount = "150.00",
                 selectedCategoryName = "Food",
                 description = "Lunch at restaurant",

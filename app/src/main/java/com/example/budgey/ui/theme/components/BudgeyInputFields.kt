@@ -410,7 +410,7 @@ private fun BudgeyTextFieldPreview() {
                 onValueChange = {},
                 label = "Amount",
                 placeholder = "0.00",
-                leadingIcon = ImageVector.vectorResource(R.drawable.attach_money)
+                leadingIcon = ImageVector.vectorResource(R.drawable.rupee_symbol)
             )
 
             // Error state

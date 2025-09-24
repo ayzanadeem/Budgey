@@ -37,7 +37,6 @@ fun BudgeyDatePicker(
     isError: Boolean = false,
     errorMessage: String? = null,
     enabled: Boolean = true,
-    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() }
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
 
@@ -45,7 +44,7 @@ fun BudgeyDatePicker(
     val clickableInteractionSource = remember { MutableInteractionSource() }
     val isFocused by clickableInteractionSource.collectIsFocusedAsState()
 
-    val dateFormatter = remember { DateTimeFormatter.ofPattern("MMM dd, yyyy") }
+    val dateFormatter = remember { DateTimeFormatter.ofPattern("dd MMM") }
     val displayText = selectedDate?.format(dateFormatter) ?: ""
 
     val scale by animateFloatAsState(

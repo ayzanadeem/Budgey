@@ -41,5 +41,6 @@ data class NewExpenseUiState(
 
     // UI states
     val showCategoryPicker: Boolean = false,
-    val showDatePicker: Boolean = false
+    val showDatePicker: Boolean = false,
+    val isSavingExpense: Boolean = false,
 )

@@ -212,6 +212,7 @@ class NewExpenseViewModel @Inject constructor(
 
         // Start saving process
         viewModelScope.launch {
+            _uiState.value = currentState.copy(isSavingExpense = true)
             try {
                 val amount = currentState.amount.toDouble()
                 val selectedCategory = currentState.categories.find { it.name == currentState.selectedCategoryName }
@@ -237,19 +238,24 @@ class NewExpenseViewModel @Inject constructor(
                 result.fold(
                     onSuccess = { expenseId ->
                         _uiState.value = currentState.copy(
-                            uiMessage = UiMessage(UiMessageType.SUCCESS, "Expense saved successfully!")
+                            uiMessage = UiMessage(UiMessageType.SUCCESS, "Expense saved successfully!"),
+                            isSavingExpense = false
                         )
                         clearForm()
                     },
                     onFailure = { exception ->
                         _uiState.value = currentState.copy(
-                            uiMessage = UiMessage(UiMessageType.ERROR, exception.message ?: "Failed to save expense")
+                            uiMessage = UiMessage(UiMessageType.ERROR, exception.message ?: "Failed to save expense"),
+                            isSavingExpense = false
                         )
                     }
                 )
+
+
             } catch (e: Exception) {
                 _uiState.value = currentState.copy(
-                    uiMessage = UiMessage(UiMessageType.ERROR, "An unexpected error occurred: ${e.message}")
+                    uiMessage = UiMessage(UiMessageType.ERROR, "An unexpected error occurred: ${e.message}"),
+                    isSavingExpense = false
                 )
             }
         }
